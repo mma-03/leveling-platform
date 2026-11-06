@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#include "serial.h"
+#include "servo.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,6 +97,33 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  serial_init();
+  servo_init();
+
+    bool within_range;
+
+    within_range = servo_set_angle(0.0f);
+    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
+    HAL_Delay(1000);
+  
+    within_range = servo_set_angle(45.0f);
+    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
+    HAL_Delay(1000);
+
+    within_range = servo_set_angle(-45.0f);
+    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
+    HAL_Delay(1000);
+
+    within_range = servo_set_angle(120.0f);
+    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
+    HAL_Delay(1000);
+
+    within_range = servo_set_angle(-120.0f);
+    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
+    HAL_Delay(1000);
+
+    servo_set_angle(0);
+
 
   /* USER CODE END 2 */
 
@@ -105,6 +134,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }
