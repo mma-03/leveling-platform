@@ -34,6 +34,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define IMU_ADDRESS 0x68
+#define IMU_ADDRESS_SHIFTED (IMU_ADDRESS << 1)
+#define WHO_AM_I_ADDR 0x75
+#define WHO_AM_I_EXPECTED 0x70
+#define I2C_TIMEOUT_MS 100
 
 /* USER CODE END PD */
 
@@ -43,6 +48,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
@@ -56,6 +63,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -96,33 +104,17 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   serial_init();
   servo_init();
 
-    bool within_range;
+  HAL_StatusTypeDef result = HAL_I2C_IsDeviceReady(&hi2c1, IMU_ADDRESS_SHIFTED, 3, I2C_TIMEOUT_MS);
+  serial_printf("Is device ready? %d\r\n", result == HAL_OK);
 
-    within_range = servo_set_angle(0.0f);
-    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
-    HAL_Delay(1000);
-  
-    within_range = servo_set_angle(45.0f);
-    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
-    HAL_Delay(1000);
-
-    within_range = servo_set_angle(-45.0f);
-    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
-    HAL_Delay(1000);
-
-    within_range = servo_set_angle(120.0f);
-    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
-    HAL_Delay(1000);
-
-    within_range = servo_set_angle(-120.0f);
-    serial_printf("angle: %f, within range? %d\r\n", servo_get_last_angle(), within_range);
-    HAL_Delay(1000);
-
-    servo_set_angle(0);
+  uint8_t who_am_i;
+  HAL_StatusTypeDef result2 = HAL_I2C_Mem_Read(&hi2c1, IMU_ADDRESS_SHIFTED, WHO_AM_I_ADDR, I2C_MEMADD_SIZE_8BIT, &who_am_i, 1, I2C_TIMEOUT_MS);
+  serial_printf("WHO_AM_I: %02X match: %d, status: %d\r\n", who_am_i, who_am_i == WHO_AM_I_EXPECTED, result2);
 
 
   /* USER CODE END 2 */
@@ -183,6 +175,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
