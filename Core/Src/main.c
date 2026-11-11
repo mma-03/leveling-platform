@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include "serial.h"
 #include "servo.h"
+#include "imu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,11 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define IMU_ADDRESS 0x68
-#define IMU_ADDRESS_SHIFTED (IMU_ADDRESS << 1)
-#define WHO_AM_I_ADDR 0x75
-#define WHO_AM_I_EXPECTED 0x70
-#define I2C_TIMEOUT_MS 100
+
 
 /* USER CODE END PD */
 
@@ -107,15 +104,10 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   serial_init();
-  servo_init();
-
-  HAL_StatusTypeDef result = HAL_I2C_IsDeviceReady(&hi2c1, IMU_ADDRESS_SHIFTED, 3, I2C_TIMEOUT_MS);
-  serial_printf("Is device ready? %d\r\n", result == HAL_OK);
-
-  uint8_t who_am_i;
-  HAL_StatusTypeDef result2 = HAL_I2C_Mem_Read(&hi2c1, IMU_ADDRESS_SHIFTED, WHO_AM_I_ADDR, I2C_MEMADD_SIZE_8BIT, &who_am_i, 1, I2C_TIMEOUT_MS);
-  serial_printf("WHO_AM_I: %02X match: %d, status: %d\r\n", who_am_i, who_am_i == WHO_AM_I_EXPECTED, result2);
-
+  if (!imu_init()) {
+    serial_printf("Error initializing IMU\r\n");
+    while(1);
+  }
 
   /* USER CODE END 2 */
 
@@ -126,12 +118,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    HAL_Delay(200);
 
+    imu_reading_g_t reading;
+    if (imu_get_reading(&reading) == false) {
+      serial_printf("Error getting reading\r\n");
+      continue;
+    }
+
+    float angle = imu_get_angle(&reading);
+
+    serial_printf("X = %f g, Y = %f g, Z = %f g, angle = %f\r\n", reading.x, reading.y, reading.z, angle);
   }
   /* USER CODE END 3 */
 }
 
-/**
+/** 
   * @brief System Clock Configuration
   * @retval None
   */

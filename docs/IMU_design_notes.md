@@ -64,14 +64,14 @@ The angle is only valid when the acceleration is gravity, since a sideways push 
 
 
 `bool imu_init(void)`:
-Prove the ID, write PWR_MGMT_1 (PWR_MGMT_1_RESET, awake) and write ACCEL_CONFIG (ACCEL_CONFIG_RESET, +/- 2 g).
+Prove the ID, write PWR_MGMT_1 (PWR_MGMT_1_AWAKE, awake) and write ACCEL_CONFIG (ACCEL_CONFIG_2G, +/- 2 g).
 It should return true if working, false if something goes wrong: no device answers, wrong ID comes back, or a write fails. Main checks this and prints a failure message, keeps the servo centered, and doesn't level.
 
 **Returning three values:** A C function can only return one value, but a reading has three values (X, Y , Z).
 - a struct that groups the values
 - an output parameter. The caller passes the address of a variable, and the function fills it in.
 
-**Read all three axes in one conversation with the I2C.** This way, all three axes get data from one read, instead of two different readings being reported when you tilt the board between two separate reads. One conversion also costs one START one address and one register number instead of three each.
+**Read all three axes in one conversation with the I2C.** This way, all three axes get data from one read, instead of two different readings being reported when you tilt the board between two separate reads. One conversion also costs one START, one address, and one register number instead of three each.
 
 **Reading vs. calculating:** Reading the sensor talks directly to the hardware and should be a separate function. Calculating is pure math that could be tested without any hardware at all.
 
@@ -94,9 +94,9 @@ float imu_get_angle(const imu_reading_g_t *reading);
 
 **Private:**
 ```c
-static int16_t imu_combine_bytes(uint8_t high, uint8_t low);
+static int16_t imu_combine_bytes(uint8_t byte_high, uint8_t byte_low);
 
-static float imu_raw_to_g(int16_t reading);
+static float imu_raw_to_g(int16_t raw_count);
 ```
 
 **Constants:**
@@ -112,4 +112,29 @@ static float imu_raw_to_g(int16_t reading);
 #define IMU_ACCEL_LSB_PER_G 16384.0f
 #define IMU_TIMEOUT_MS 100
 #define IMU_ACCEL_XOUT_H 0x3B
+#define IMU_ACCEL_DATA_LEN 6
+#define IMU_RADIAN_TO_DEGREES_FACTOR (180.0f/3.14159265f)
 ```
+
+## Verification
+
+**Setup:** NUCLEO-F401RE, GY-521 (MPU-6500) on I2C1 (PB8 = SCL, PB9 = SDA) at 100 kHz, powered from the Nucleo's 3.3 V. Readings printed through UART every 200 ms.
+
+**Procedure:** the board was held flat, then tilted by lifting each end of the breadboard, then returned flat.
+
+### Results
+| Position | X (g) | Y (g) | Z (g) | Angle | Expected |
+| --- | --- | --- | --- | --- | --- |
+| Flat | ~ -0.03 | ~ 0.01 | ~1.01 | ~ +0.5° | ~ 0°, Z = 1 |
+| Top end lifted | ~ -0.04 | ~ -0.23 | ~ 0.98 | ~ -13° | (-) angle |
+| Bottom end lifted | ~ 0.01 | ~ 0.42 | ~0.91 | ~ +24.7° | (+) angle |
+
+**Axis identification:** X stayed roughly constant during both tilts, so the board was rotating around the X-axis. Y and Z changed, confirming `atan2f(y, z)` as the correct axes for this tilt direction.
+
+**Consistency:** at the largest tilt (24.7°), sin(24.7°) = 0.418 and cos(24.7°) = 0.909, matching the measured Y = 0.42 g and Z = 0.91 g. The total magnitude √(0.42^2 + 0.91^2) = 1.0 g. This confirms that the I2C read -> byte combining -> raw to g conversion -> atan2f is all consistent and correct.
+
+### Observations
+- When flat, the angle reads about +0.5° rather than 0°, and Z reads about 1.015g rather than 1.000 g. This comes from the surface not being perfectly level and from the sensor's own internal bias. Planned fix: a calibration step that records the levelled angle and subtracts it from future readings.
+- While not moving, the angle varies by about +/- 0.4°. If given directly to the servo, this would cause visible movement. Planned fix: a low-pass filter on the angle.
+- The angle measures tilt around an axis across the width of the breadboard, so the servo shaft must be mounted along that same axis.
+

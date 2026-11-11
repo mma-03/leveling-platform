@@ -14,8 +14,8 @@
 #define IMU_ACCEL_LSB_PER_G 16384.0f
 #define IMU_TIMEOUT_MS 100
 #define IMU_ACCEL_XOUT_H 0x3B
-#define IMU_BUFFER_SIZE 6
-#define IMU_RADIAN_TO_DEGREES_FACTOR (180/M_PI)
+#define IMU_ACCEL_DATA_LEN 6
+#define IMU_RADIAN_TO_DEGREES_FACTOR (180.0f/3.14159265f)
 
 extern I2C_HandleTypeDef hi2c1;
 // private helpers
@@ -24,8 +24,8 @@ static int16_t imu_combine_bytes(uint8_t byte_high, uint8_t byte_low){
     return (int16_t)combined;
 }
 
-static float imu_raw_to_g(int16_t reading) {
-    return (reading / IMU_ACCEL_LSB_PER_G);
+static float imu_raw_to_g(int16_t raw_count) {
+    return (raw_count / IMU_ACCEL_LSB_PER_G);
 }
 
 // public functions
@@ -47,11 +47,11 @@ bool imu_init(void){
 }
 
 bool imu_get_reading(imu_reading_g_t *reading){
-    uint8_t buffer[IMU_BUFFER_SIZE];
+    uint8_t buffer[IMU_ACCEL_DATA_LEN];
     if (HAL_I2C_Mem_Read(&hi2c1, IMU_ADDRESS_SHIFTED, IMU_ACCEL_XOUT_H, I2C_MEMADD_SIZE_8BIT, buffer, sizeof(buffer), IMU_TIMEOUT_MS) != HAL_OK) {
         return false;
     }
-
+    // buffer[] = {XH, XL, YH, YL, ZH, ZL}
     reading->x = imu_raw_to_g(imu_combine_bytes(buffer[0], buffer[1]));
     reading->y = imu_raw_to_g(imu_combine_bytes(buffer[2], buffer[3]));
     reading->z = imu_raw_to_g(imu_combine_bytes(buffer[4], buffer[5]));
@@ -61,6 +61,6 @@ bool imu_get_reading(imu_reading_g_t *reading){
 
 float imu_get_angle(const imu_reading_g_t *reading){
     float angle_radian = atan2f(reading->y, reading->z);
-    float angle_degrees = (angle_radian)/IMU_RADIAN_TO_DEGREES_FACTOR;
+    float angle_degrees = (angle_radian) * IMU_RADIAN_TO_DEGREES_FACTOR;
     return angle_degrees;
 }

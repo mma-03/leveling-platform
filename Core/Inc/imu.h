@@ -1,5 +1,5 @@
 #ifndef IMU_H
-#define IMU_h
+#define IMU_H
 
 #include <stdbool.h>
 
