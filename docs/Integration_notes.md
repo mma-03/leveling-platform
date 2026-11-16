@@ -24,11 +24,18 @@
 - Timing budget: I2C read = ~0.7 ms + one print = ~2.2 ms = ~ 3 ms, which fits in the 10 ms period
 
 ### Test Results
-- Servo reacts faster and moves more smoothly
-- A line prints 10 times a second
-- Slight jitter still present
+- Servo reacts faster and moves more smoothly.
+- A line prints 10 times a second.
+- Slight jitter still present.
 
-## Satge 3: Calibration
+## Stage 3: Calibration
 1. An offset that lives in imu.c which makes imu_get_angle() return calibrated angles.
-2. Average 100 readings, which cuts the noise about 10x less, and at 10ms per reading, it takes about 1 second, which is a reasonable time to hold the board still at calibration.
-3. Calibrate on button press, as the board maybe held tilted at startup. At startup, the offset is 0 until the button is pressed.
+2. Average 100 readings, which cuts the noise by about 10x, and at 10ms per reading, it takes about 1 second, which is a reasonable time to hold the board still at calibration.
+3. Calibrate on button press, as the board may be held tilted at startup. At startup, the offset is 0 until the button is pressed.
+4. Calibrate on a truly level surface, the platform treats the calibration surface as level.
+
+### Test Results
+- Calibration centres the tilt reading on ~0.0°.
+- Recalibrating gives the same result instead of shifting, confirming the raw-angle design.
+- Noise of about +/- 0.5° remains, to be addressed by the stage 4 filter.
+
