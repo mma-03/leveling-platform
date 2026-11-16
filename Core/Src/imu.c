@@ -16,9 +16,13 @@
 #define IMU_ACCEL_XOUT_H 0x3B
 #define IMU_ACCEL_DATA_LEN 6
 #define IMU_RADIAN_TO_DEGREES_FACTOR (180.0f/3.14159265f)
+#define IMU_CALIBRATION_SAMPLE_MS 10
+#define IMU_CALIBRATION_AVG_READINGS 100
 
 extern I2C_HandleTypeDef hi2c1;
-// private helpers
+
+static float s_angle_offset_deg = 0.0f;
+
 static int16_t imu_combine_bytes(uint8_t byte_high, uint8_t byte_low){
     uint16_t combined = (byte_high << 8) | byte_low;
     return (int16_t)combined;
@@ -28,7 +32,6 @@ static float imu_raw_to_g(int16_t raw_count) {
     return (raw_count / IMU_ACCEL_LSB_PER_G);
 }
 
-// public functions
 bool imu_init(void){
     uint8_t who_am_i;
     if ((HAL_I2C_Mem_Read(&hi2c1, IMU_ADDRESS_SHIFTED, IMU_WHO_AM_I_ADDR, I2C_MEMADD_SIZE_8BIT, &who_am_i, 1, IMU_TIMEOUT_MS) != HAL_OK) || (who_am_i != IMU_WHO_AM_I_EXPECTED)) {
@@ -59,8 +62,28 @@ bool imu_get_reading(imu_reading_g_t *reading){
     return true;
 }
 
-float imu_get_angle(const imu_reading_g_t *reading){
+static float imu_raw_angle(const imu_reading_g_t *reading) {
     float angle_radian = atan2f(reading->y, reading->z);
     float angle_degrees = (angle_radian) * IMU_RADIAN_TO_DEGREES_FACTOR;
     return angle_degrees;
+}
+
+float imu_get_angle(const imu_reading_g_t *reading){
+    return imu_raw_angle(reading) - s_angle_offset_deg;
+}
+
+bool imu_calibrate(void) {
+    float angle_sum = 0.0f;
+    
+    for (int i = 0; i < IMU_CALIBRATION_AVG_READINGS; i++) {
+        imu_reading_g_t reading;
+        if (!imu_get_reading(&reading)) {
+            return false;
+        }
+        angle_sum += imu_raw_angle(&reading);
+        HAL_Delay(IMU_CALIBRATION_SAMPLE_MS);
+    }
+
+    s_angle_offset_deg = angle_sum/IMU_CALIBRATION_AVG_READINGS;
+    return true;
 }
