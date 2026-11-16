@@ -70,3 +70,5 @@ float servo_get_last_angle(void); // returns the last angle for callers that nee
 | -120° | clamped to ~ -81° | -81.081 | 0 |
 
 **Note on the +/- 45° assymetry:** 45° x 11.1 µs/° = 499.5 µs, which isn't a whole number so the pulse has to be rounded. `lroundf` rounds a positive value ending in .5 up, so +45° becomes 1999.5 -> 2000 µs and -45° becomes 1000.5 -> 1001 µs. Rounding up moves +45° slightly away from center and -45° slightly towards center. Converting the pulses back gives +45.045° and -44.955°.
+
+**Note:** Center trimmed to 1600µs (+100 µs, ~9°) to compensate for the horn's spline position. Range is now ~72° one way and ~90° the other.

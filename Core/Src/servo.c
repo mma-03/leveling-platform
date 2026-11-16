@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#define SERVO_CENTER_US 1500
+#define SERVO_CENTER_US 1600
 #define SERVO_MAX_CLAMP_US 2400
 #define SERVO_MIN_CLAMP_US 600
 #define SERVO_US_PER_DEGREE 11.1f

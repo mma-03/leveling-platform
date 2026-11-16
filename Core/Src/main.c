@@ -36,6 +36,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+#define SERVO_MOUNT_DIRECTION (-1.0f) // servo shaft points right: its + direction is opposite to the IMU's
 
 /* USER CODE END PD */
 
@@ -104,6 +105,7 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   serial_init();
+  servo_init();
   if (!imu_init()) {
     serial_printf("Error initializing IMU\r\n");
     while(1);
@@ -127,8 +129,14 @@ int main(void)
     }
 
     float angle = imu_get_angle(&reading);
+    float angle_correction = -angle;
+    if (!servo_set_angle(angle_correction * SERVO_MOUNT_DIRECTION)) {
+      serial_printf("Out of range.\r\n");
+    }
 
-    serial_printf("X = %f g, Y = %f g, Z = %f g, angle = %f\r\n", reading.x, reading.y, reading.z, angle);
+
+
+    serial_printf("Tilt = %f, Servo = %f\r\n", angle, angle_correction);
   }
   /* USER CODE END 3 */
 }
