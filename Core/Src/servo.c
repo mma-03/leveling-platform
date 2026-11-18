@@ -11,7 +11,7 @@
 extern TIM_HandleTypeDef htim2;
 
 static float s_last_angle_degrees = 0.0f;
-// private helper functions
+
 static int32_t angle_to_pulse(float angle_degrees) {
     return lroundf(SERVO_CENTER_US + (angle_degrees * SERVO_US_PER_DEGREE));
 }
@@ -20,7 +20,6 @@ static float pulse_to_angle(int32_t pulse_us) {
     return (pulse_us - SERVO_CENTER_US) / SERVO_US_PER_DEGREE;
 }
 
-// public functions
 void servo_init(void) {
     servo_set_angle(0.0f); 
 

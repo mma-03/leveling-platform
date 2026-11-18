@@ -96,9 +96,9 @@ float imu_get_filtered_angle(const imu_reading_g_t *reading) {
 
     if (!s_filter_started) {
         s_filtered_angle_deg = new_angle;
+        s_filter_started = true;
     } else {
         s_filtered_angle_deg = s_filtered_angle_deg + IMU_FILTER_SMOOTHING_FACTOR * (new_angle - s_filtered_angle_deg);
-        s_filter_started = true;
     }
     
     return s_filtered_angle_deg;

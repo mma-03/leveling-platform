@@ -45,7 +45,7 @@
 3. Reset the filter after calibrating (mark it as "not started").
 4. **Choosing α:** `filtered_new = filtered_old + α x (reading - filtered_old)`.
 Each 10 ms pass moves the filtered value a fraction α towards the new reading.
-- reading: raw angle from the IMU this pass.
+- reading: calibrated angle from the IMU this pass.
 - filtered_old: filter's output from the previous pass.
 - filtered_new: this pass's output. Sent to the servo, and becomes filtered_old next pass.
 - noise left = noise x √(α / (2 - α))
@@ -60,5 +60,6 @@ Each 10 ms pass moves the filtered value a fraction α towards the new reading.
 Starting with α = 0.2 which removes about 2/3 of the noise with only 50 ms of lag.
 
 ### Test Results
-- α = 0.2 feels smooth while still and follows tilts without visible lag.
-- The servo matches the filtered tilt to within 0.09°.
+- First version never started the filter (the "started" flag was set in the wrong branch), found in review and fixed.
+- Still test, 10s each: unfiltered (α = 1.0) spread = ~0.72° (+/- 0.36°), filtered (α = 0.2) spread = ~0.37° (+/- 0.19°). Most filtered readings stay within +/- 0.06° of the mean.
+- While still, the unfiltered servo command jumped between ~9 positions, with the filter, it stays at one position most of the time.

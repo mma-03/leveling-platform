@@ -40,14 +40,15 @@ Each piece of hardware has its own module, built on top of ST's HAL, with a head
 ## Key design decisions
 - **Fixed-rate loop:** a timer interrupt sets the loop period, so timing stays constant as the code changes. Estimated budget: ~3 ms of work per 10 ms period.
 - **Calibration by averaging:** pressing the button averages 100 raw readings (~1 s), reducing noise in the zero point by about 10×. Calibration always averages the raw angle, so recalibrating never compounds an old offset.
-- **Filter tuning:** α = 0.2 gives about 2/3 noise reduction for ~50 ms of lag, chosen from calculated noise/lag estimates and checked on hardware.
+- **Filter tuning:** α = 0.2, chosen from calculated noise/lag estimates (predicted ~2/3 noise reduction and ~50 ms of lag). Measured with the board still: the spread of readings dropped from ~0.72° to ~0.37°, and the servo command stopped jumping between positions.
 - **Mounting direction as a constant:** the servo's mounting reverses its direction relative to the IMU. This lives in one named constant rather than being hidden in the control logic.
 - **Interrupt safety:** flags shared with interrupts are volatile, and read-and-clear happens inside a critical section to avoid a lost-event race condition.
 
 ## Verification
-- IMU readings checked against trigonometry: at a 24.7° tilt, measured Y = 0.42 g and Z = 0.91 g match sin/cos of the angle, with a total of ~1.0 g.
+- IMU verified on hardware: the tilt angle tracked the board in both directions, and the measured gravity vector totalled ~1.0 g (Y = 0.42 g, Z = 0.91 g at a 24.7° tilt).
 - Servo endpoints and center measured on hardware. 1 µs pulse resolution = ~0.09°.
 - Calibration centers the reading on ~0.0°, and repeated calibration gives the same result.
+- Low-pass filter tested with the board still, filter off vs on: the spread was significantly reduced (~0.72° to ~0.37°).
 - Full test results for each stage are in the design notes.
 
 ## Design notes
