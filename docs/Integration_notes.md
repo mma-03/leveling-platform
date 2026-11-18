@@ -11,7 +11,7 @@
 - **Failed read:** skip the cycle. The PWM timer keeps sending the last pulse, so the servo holds its last position instead of jumping.
 - **Out of range:** `servo_set_angle()` clamps to the safe limits and returns `false`. Report it over the serial for now (OLED later).
 
-### Test results
+### Test Results
 - Predicted negative, but the platform doubled the tilt, fixed with the mounting constant.
 - The servo's mounting reverses its direction relative to the IMU, which was captured in a single mounting constant rather than hiding it in the control logic.
 
@@ -39,3 +39,26 @@
 - Recalibrating gives the same result instead of shifting, confirming the raw-angle design.
 - Noise of about +/- 0.5° remains, to be addressed by the stage 4 filter.
 
+## Stage 4: Filter
+1. static variable, at file scope in imu.c.
+2. The filtered value starts at the first reading. A static bool that indicates if the filter has started at the beginning.
+3. Reset the filter after calibrating (mark it as "not started").
+4. **Choosing α:** `filtered_new = filtered_old + α x (reading - filtered_old)`.
+Each 10 ms pass moves the filtered value a fraction α towards the new reading.
+- reading: raw angle from the IMU this pass.
+- filtered_old: filter's output from the previous pass.
+- filtered_new: this pass's output. Sent to the servo, and becomes filtered_old next pass.
+- noise left = noise x √(α / (2 - α))
+- lag = ~ (1 / α) x 10 ms
+
+| α | Noise left (from +/- 0.5°) | Lag |
+|---|---|---|
+| 0.5 | +/- 0.29 ° | 20 ms |
+| 0.2 | +/- 0.17 ° | 50 ms |
+| 0.1 | +/- 0.11 ° | 100 ms |
+
+Starting with α = 0.2 which removes about 2/3 of the noise with only 50 ms of lag.
+
+### Test Results
+- α = 0.2 feels smooth while still and follows tilts without visible lag.
+- The servo matches the filtered tilt to within 0.09°.

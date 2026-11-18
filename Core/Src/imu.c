@@ -18,10 +18,12 @@
 #define IMU_RADIAN_TO_DEGREES_FACTOR (180.0f/3.14159265f)
 #define IMU_CALIBRATION_SAMPLE_MS 10
 #define IMU_CALIBRATION_AVG_READINGS 100
+#define IMU_FILTER_SMOOTHING_FACTOR 0.2f
 
 extern I2C_HandleTypeDef hi2c1;
-
 static float s_angle_offset_deg = 0.0f;
+static bool s_filter_started = false;
+static float s_filtered_angle_deg = 0.0f;
 
 static int16_t imu_combine_bytes(uint8_t byte_high, uint8_t byte_low){
     uint16_t combined = (byte_high << 8) | byte_low;
@@ -85,5 +87,19 @@ bool imu_calibrate(void) {
     }
 
     s_angle_offset_deg = angle_sum/IMU_CALIBRATION_AVG_READINGS;
+    s_filter_started = false;
     return true;
+}
+
+float imu_get_filtered_angle(const imu_reading_g_t *reading) {
+    float new_angle = imu_get_angle(reading);
+
+    if (!s_filter_started) {
+        s_filtered_angle_deg = new_angle;
+    } else {
+        s_filtered_angle_deg = s_filtered_angle_deg + IMU_FILTER_SMOOTHING_FACTOR * (new_angle - s_filtered_angle_deg);
+        s_filter_started = true;
+    }
+    
+    return s_filtered_angle_deg;
 }

@@ -143,7 +143,7 @@ int main(void)
       continue;
       }
 
-      float angle = imu_get_angle(&reading);
+      float angle = imu_get_filtered_angle(&reading);
       float angle_correction = -angle;
       if (!servo_set_angle(angle_correction * SERVO_MOUNT_DIRECTION)) {
         serial_printf("Out of range.\r\n");

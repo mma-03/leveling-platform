@@ -17,4 +17,6 @@ float imu_get_angle(const imu_reading_g_t *reading);
 
 bool imu_calibrate(void);
 
+float imu_get_filtered_angle(const imu_reading_g_t *reading);
+
 #endif
